@@ -35,6 +35,8 @@ interface GitHubOptions {
 export interface GitHubReleaseOptions {
   releaseLabel?: string;
   draft?: boolean;
+  notesHeader?: string;
+  notesFooter?: string;
 }
 
 // Used by ReleasePR: Factory and Constructor
@@ -98,6 +100,8 @@ export type ManifestPackage = Pick<
   | 'packageName'
   | 'bumpMinorPreMajor'
   | 'bumpPatchForMinorPreMajor'
+  | 'notesHeader'
+  | 'notesFooter'
   | 'releaseAs'
   | 'changelogSections'
   | 'changelogPath'

@@ -48,6 +48,8 @@ interface ReleaserConfigJson {
   'bump-minor-pre-major'?: boolean;
   'bump-patch-for-minor-pre-major'?: boolean;
   'changelog-sections'?: ChangelogSection[];
+  'release-notes-extra-header'?: string;
+  'release-notes-extra-footer'?: string;
   'release-as'?: string;
   draft?: boolean;
 }
@@ -236,6 +238,12 @@ export class Manifest {
           changelogSections:
             pkgCfg['changelog-sections'] ?? config['changelog-sections'],
           changelogPath: pkgCfg['changelog-path'],
+          notesHeader:
+            pkgCfg['release-notes-extra-header'] ??
+            config['release-notes-extra-header'],
+          notesFooter:
+            pkgCfg['release-notes-extra-footer'] ??
+            config['release-notes-extra-footer'],
           releaseAs: this.resolveReleaseAs(
             pkgCfg['release-as'],
             config['release-as']
@@ -404,8 +412,10 @@ export class Manifest {
 
   private async getReleasePR(
     pkg: ManifestPackage
-  ): Promise<[ReleasePR, boolean | undefined]> {
-    const {releaseType, draft, ...options} = pkg;
+  ): Promise<
+    [ReleasePR, boolean | undefined, string | undefined, string | undefined]
+  > {
+    const {releaseType, draft, notesHeader, notesFooter, ...options} = pkg;
     const releaserOptions = {
       monorepoTags: true,
       ...options,
@@ -416,7 +426,7 @@ export class Manifest {
       skipDependencyUpdates: true,
       ...releaserOptions,
     });
-    return [releasePR, draft];
+    return [releasePR, draft, notesHeader, notesFooter];
   }
 
   private async runReleasers(
@@ -689,7 +699,8 @@ export class Manifest {
     const releases: Record<string, GitHubReleaseResponse | undefined> = {};
     let allReleasesCreated = !!packagesForReleasers.length;
     for (const pkg of packagesForReleasers) {
-      const [releasePR, draft] = await this.getReleasePR(pkg.config);
+      const [releasePR, draft, notesHeader, notesFooter] =
+        await this.getReleasePR(pkg.config);
       const pkgName = (await releasePR.getPackageName()).name;
       const pkgLogDisp = `${releasePR.constructor.name}(${pkgName})`;
       if (!pkg.lastVersion) {
@@ -710,6 +721,8 @@ export class Manifest {
         github: this.gh,
         releasePR,
         draft,
+        notesHeader,
+        notesFooter,
       });
       let release: ReleaseCreateResponse | undefined;
       try {
